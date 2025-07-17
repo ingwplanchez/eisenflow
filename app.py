@@ -1,220 +1,252 @@
-# eisenplanner/app.py
-
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
-import datetime
+from sqlalchemy import asc, desc, case
+from datetime import datetime
+import os
 
 app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
+# Definición del modelo de la tarea
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
-    completed = db.Column(db.Boolean, default=False)
-    is_urgent = db.Column(db.Boolean, default=False, nullable=False)
-    is_important = db.Column(db.Boolean, default=False, nullable=False)
-    due_date = db.Column(db.DateTime, nullable=True) # Mantener como DateTime si así lo tenías funcionando
+    is_urgent = db.Column(db.Boolean, default=False)
+    is_important = db.Column(db.Boolean, default=False)
+    due_date = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(50), default='Pendiente') # 'Pendiente', 'En Progreso', 'Completado'
 
     def __repr__(self):
-        return (f'<Task {self.id}: {self.content[:20]}... - C:{self.completed}, '
-                f'Urgent:{self.is_urgent}, Important:{self.is_important}, '
-                f'Due:{self.due_date.strftime("%Y-%m-%d") if self.due_date else "N/A"}>')
+        return f'<Task {self.id}: {self.content}>'
 
-# --- IMPORTANT: DATABASE CREATION INSTRUCTIONS ---
-# If you make changes to the Task model (like adding/removing columns or changing types),
-# you MUST recreate your database for the changes to take effect.
-# 1. STOP your Flask server (Ctrl+C).
-# 2. DELETE the 'todo.db' file from your project directory (or 'instance/' if you have one).
-# 3. UNCOMMENT the following two lines:
-# with app.app_context():
-#     db.create_all()
-# 4. Run your app once (`python app.py` or `flask run`). The database will be created.
-# 5. ONCE IT STARTS SUCCESSFULLY, COMMENT OUT the two lines above again.
-# This prevents the database from being recreated every time you run the app.
-# --- END DATABASE INSTRUCTIONS ---
+# Crear la base de datos si no existe
+with app.app_context():
+    db.create_all()
+
+# Estados de las tareas para usar en los desplegables y filtros
+TASK_STATUSES = ['Pendiente', 'En Progreso', 'Completado']
 
 @app.route('/')
 def index():
-    # Capture the current view mode from URL, default to 'list'
-    view_mode = request.args.get('view_mode', 'list')
+    view_mode = request.args.get('view_mode', 'kanban') # Default to 'kanban'
+    filter_urgent = request.args.get('urgent')
+    filter_important = request.args.get('important')
+    filter_status = request.args.get('status', 'all') # Default to 'all' for status filter
 
-    # --- INICIO DE CAMBIO ---
-    # Obtener los filtros y convertirlos a None si son cadenas vacías
-    filter_urgent_raw = request.args.get('urgent')
-    filter_important_raw = request.args.get('important')
+    # Construir la consulta principal con todos los filtros
+    query = Task.query
 
-    filter_urgent = filter_urgent_raw if filter_urgent_raw != '' else None
-    filter_important = filter_important_raw if filter_important_raw != '' else None
-    # --- FIN DE CAMBIO ---
-
-    base_query = Task.query
-
-    # Apply filters to the base query
-    # Note: These filters apply to the set of tasks that will be displayed in ALL views.
     if filter_urgent == 'true':
-        base_query = base_query.filter_by(is_urgent=True)
+        query = query.filter_by(is_urgent=True)
     elif filter_urgent == 'false':
-        base_query = base_query.filter_by(is_urgent=False)
+        query = query.filter_by(is_urgent=False)
 
     if filter_important == 'true':
-        base_query = base_query.filter_by(is_important=True)
+        query = query.filter_by(is_important=True)
     elif filter_important == 'false':
-        base_query = base_query.filter_by(is_important=False)
+        query = query.filter_by(is_important=False)
 
-    # Order by completion first (incomplete tasks before completed), then due_date, then ID
-    # This list will be used for the simple 'list' view when filters are active,
-    # and also to populate the quadrants.
-    all_tasks_for_display = base_query.order_by(
-        Task.completed.asc(), Task.due_date.asc(), Task.id.asc()
+    if filter_status != 'all':
+        query = query.filter_by(status=filter_status)
+
+    # Obtener las tareas ya filtradas por todos los parámetros
+    # tasks = query.order_by(Task.due_date.asc(), Task.id.asc()).all()
+
+    tasks = query.order_by(
+        # Las tareas NO completadas (False) irán antes que las completadas (True)
+        case(
+            (Task.status == 'Completado', 1), # Si es completado, dale un valor más alto (irá al final)
+            else_=0                           # De lo contrario, dale un valor más bajo (irá primero)
+        ).asc(),
+        Task.due_date.asc(), # Luego, ordena por fecha de vencimiento ascendente
+        Task.id.asc()       # Finalmente, por ID ascendente (más recientes primero si fechas iguales)
     ).all()
 
-    # Determine if "All" tasks are being shown (no specific filters applied)
-    # This variable helps 'index.html' decide between showing all quadrant sections
-    # or just a flat list of filtered tasks when in 'list' mode.
-    # --- show_all_quadrants ahora funcionará correctamente con los filtros convertidos a None ---
-    show_all_quadrants = (filter_urgent is None and filter_important is None)
-
-    # Prepare quadrants data. This structure is always sent,
-    # even if a specific filter is applied (the tasks within will just be filtered).
+    # Preparar datos para la vista de Matriz y Lista (agrupada por cuadrantes)
+    # Estos cuadrantes se llenarán con las 'tasks' ya filtradas
     quadrants = {
         'do': {'title': 'Cuadrante 1: Hacer (Hoy o Mañana)', 'tasks': [], 'class': 'quadrant-1'},
         'schedule': {'title': 'Cuadrante 2: Agendar (Próximas Semanas)', 'tasks': [], 'class': 'quadrant-2'},
         'delegate': {'title': 'Cuadrante 3: Delegar (Hacer Ahora)', 'tasks': [], 'class': 'quadrant-3'},
-        'eliminate': {'title': 'Cuadrante 4: Eliminar (Posponer)', 'tasks': [], 'class': 'quadrant-4'},
+        'eliminate': {'title': 'Cuadrante 4: Eliminar (Posponer)', 'tasks': [], 'class': 'quadrant-4'}
     }
 
-    # Populate quadrants with the *filtered* tasks for accurate display in matrix/list views
-    for task in all_tasks_for_display:
+    quadrant_counts = {
+        'do': 0,
+        'schedule': 0,
+        'delegate': 0,
+        'eliminate': 0
+    }
+
+    # Llenar los cuadrantes con las tareas que ya están filtradas por todos los criterios, incluido el estado
+    for task in tasks:
         if task.is_urgent and task.is_important:
             quadrants['do']['tasks'].append(task)
+            quadrant_counts['do'] += 1
         elif not task.is_urgent and task.is_important:
             quadrants['schedule']['tasks'].append(task)
+            quadrant_counts['schedule'] += 1
         elif task.is_urgent and not task.is_important:
             quadrants['delegate']['tasks'].append(task)
-        elif not task.is_urgent and not task.is_important:
+            quadrant_counts['delegate'] += 1
+        else:
             quadrants['eliminate']['tasks'].append(task)
-    
-    # Calculate counts for display (based on filtered tasks in quadrants)
-    quadrant_counts = {key: len(data['tasks']) for key, data in quadrants.items()}
+            quadrant_counts['eliminate'] += 1
 
-    return render_template(
-        'index.html',
-        tasks=all_tasks_for_display, # The filtered list of tasks for the simple list view
-        quadrants=quadrants, # Quadrant data (contains filtered tasks for each quadrant)
-        quadrant_counts=quadrant_counts, # Counts for each quadrant
-        show_all_quadrants=show_all_quadrants, # True if "Todas" is selected, False if specific filters
-        view_mode=view_mode, # The selected view mode ('list' or 'matrix')
-        # Pass current filter states to the template for button active states and form hidden fields
-        current_urgent_filter=filter_urgent, # Ahora será None o 'true'/'false'
-        current_important_filter=filter_important # Ahora será None o 'true'/'false'
-    )
+    # Determinar si se deben mostrar todos los cuadrantes (esto controla la visualización HTML)
+    show_all_quadrants = False
+    if view_mode == 'list':
+        show_all_quadrants = True
+    elif (filter_urgent is None or filter_urgent == '') and \
+         (filter_important is None or filter_important == '') and \
+         (filter_status is None or filter_status == '' or filter_status == 'all'):
+        show_all_quadrants = True
+    # Nota: 'show_all_quadrants' ahora solo afecta la estructura de la cuadrícula en HTML,
+    # no el filtrado de las tareas que se colocan en los cuadrantes.
 
-@app.route('/add', methods=['POST'])
+    # Preparar tareas para la vista Kanban (agrupadas por estado)
+    tasks_by_status = {status: [] for status in TASK_STATUSES}
+    if view_mode == 'kanban':
+        kanban_query = Task.query.order_by(
+            Task.is_important.desc(),
+            Task.is_urgent.desc(),
+            Task.due_date.asc(),
+            Task.id.asc()
+        )
+        
+        # Aplicar filtros de urgente/importante si existen para Kanban
+        if filter_urgent == 'true':
+            kanban_query = kanban_query.filter_by(is_urgent=True)
+        elif filter_urgent == 'false':
+            kanban_query = kanban_query.filter_by(is_urgent=False)
+
+        if filter_important == 'true':
+            kanban_query = kanban_query.filter_by(is_important=True)
+        elif filter_important == 'false':
+            kanban_query = kanban_query.filter_by(is_important=False)
+
+        # Aplicar filtro de estado para Kanban si no es 'all'
+        if filter_status != 'all':
+            kanban_query = kanban_query.filter_by(status=filter_status)
+
+        kanban_tasks = kanban_query.all()
+
+        for task in kanban_tasks:
+            tasks_by_status[task.status].append(task)
+
+
+    return render_template('index.html',
+                           tasks=tasks,
+                           view_mode=view_mode,
+                           task_statuses=TASK_STATUSES,
+                           current_urgent_filter=filter_urgent,
+                           current_important_filter=filter_important,
+                           current_status_filter=filter_status,
+                           quadrants=quadrants,
+                           quadrant_counts=quadrant_counts,
+                           show_all_quadrants=show_all_quadrants,
+                           tasks_by_status=tasks_by_status)
+
+
+@app.route('/add_task', methods=['POST'])
 def add_task():
-    if request.method == 'POST':
-        task_content = request.form['content'].strip()
-        is_urgent = 'is_urgent' in request.form
-        is_important = 'is_important' in request.form
-        
-        due_date_str = request.form.get('due_date')
-        due_date = None
-        if due_date_str:
-            try:
-                due_date = datetime.datetime.strptime(due_date_str, '%Y-%m-%d')
-            except ValueError:
-                print(f"Advertencia: Fecha límite '{due_date_str}' en formato incorrecto.")
-        
-        if task_content:
-            new_task = Task(content=task_content, is_urgent=is_urgent, is_important=is_important, due_date=due_date)
-            try:
-                db.session.add(new_task)
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print(f"Error al añadir tarea: {e}")
-    # Redirect back to the current view mode and filters if they exist
-    return redirect(url_for('index', 
-                             view_mode=request.form.get('current_view_mode', 'list'),
-                             urgent=request.form.get('current_urgent_filter'), # Puede ser '' o 'true'/'false'
-                             important=request.form.get('current_important_filter'))) # Puede ser '' o 'true'/'false'
+    content = request.form['content']
+    is_urgent = 'is_urgent' in request.form
+    is_important = 'is_important' in request.form
+    due_date_str = request.form.get('due_date')
+    due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else None
 
-@app.route('/delete/<int:task_id>')
-def delete_task(task_id):
-    task_to_delete = Task.query.get_or_404(task_id)
-    try:
-        db.session.delete(task_to_delete)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error al eliminar tarea: {e}")
-    # Redirect back to the current view mode and filters if they exist
-    return redirect(url_for('index', 
-                             view_mode=request.args.get('view_mode', 'list'),
-                             urgent=request.args.get('urgent'),
-                             important=request.args.get('important')))
+    new_task = Task(content=content, is_urgent=is_urgent, is_important=is_important, due_date=due_date, status='Pendiente')
+    db.session.add(new_task)
+    db.session.commit()
 
-@app.route('/complete/<int:task_id>')
-def complete_task(task_id):
-    task_to_complete = Task.query.get_or_404(task_id)
-    try:
-        task_to_complete.completed = not task_to_complete.completed
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error al completar/descompletar tarea: {e}")
-    # Redirect back to the current view mode and filters if they exist
-    return redirect(url_for('index', 
-                             view_mode=request.args.get('view_mode', 'list'),
-                             urgent=request.args.get('urgent'),
-                             important=request.args.get('important')))
+    # Recuperar los parámetros de la URL para redirigir a la vista actual
+    current_view_mode = request.form.get('current_view_mode', 'list')
+    current_urgent_filter = request.form.get('current_urgent_filter')
+    current_important_filter = request.form.get('current_important_filter')
+    current_status_filter = request.form.get('current_status_filter')
 
-@app.route('/edit/<int:task_id>')
+    return redirect(url_for('index',
+                            view_mode=current_view_mode,
+                            urgent=current_urgent_filter if current_urgent_filter else None,
+                            important=current_important_filter if current_important_filter else None,
+                            status=current_status_filter if current_status_filter else None))
+
+@app.route('/edit_task/<int:task_id>')
 def edit_task(task_id):
     task = Task.query.get_or_404(task_id)
-    # Pass current view mode and filters to edit.html so it can pass them back to update_task
-    return render_template('edit.html', 
+    # Recuperar los parámetros de la URL para pasarlos a la plantilla de edición
+    view_mode = request.args.get('view_mode', 'list')
+    urgent = request.args.get('urgent')
+    important = request.args.get('important')
+    status = request.args.get('status')
+
+    return render_template('edit.html',
                            task=task,
-                           view_mode=request.args.get('view_mode', 'list'),
-                           urgent=request.args.get('urgent'),
-                           important=request.args.get('important'))
+                           task_statuses=TASK_STATUSES,
+                           view_mode=view_mode,
+                           urgent=urgent,
+                           important=important,
+                           status=status)
 
-@app.route('/update/<int:task_id>', methods=['POST'])
+@app.route('/update_task/<int:task_id>', methods=['POST'])
 def update_task(task_id):
-    task_to_update = Task.query.get_or_404(task_id)
-    if request.method == 'POST':
-        updated_content = request.form['content'].strip()
-        updated_is_urgent = 'is_urgent' in request.form
-        updated_is_important = 'is_important' in request.form
-        
-        updated_due_date_str = request.form.get('due_date')
-        updated_due_date = None
-        if updated_due_date_str:
-            try:
-                updated_due_date = datetime.datetime.strptime(updated_due_date_str, '%Y-%m-%d')
-            except ValueError:
-                print(f"Advertencia: Fecha límite actualizada '{updated_due_date_str}' en formato incorrecto.")
-        elif not updated_due_date_str: # If the field is left empty, set to None
-            updated_due_date = None
+    task = Task.query.get_or_404(task_id)
+    task.content = request.form['content']
+    task.is_urgent = 'is_urgent' in request.form
+    task.is_important = 'is_important' in request.form
+    task.status = request.form['status']
+    due_date_str = request.form.get('due_date')
+    task.due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date() if due_date_str else None
 
-        if updated_content:
-            try:
-                task_to_update.content = updated_content
-                task_to_update.is_urgent = updated_is_urgent
-                task_to_update.is_important = updated_is_important
-                task_to_update.due_date = updated_due_date
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                print(f"Error al actualizar tarea: {e}")
-    # Redirect back to the current view mode and filters
-    return redirect(url_for('index', 
-                             view_mode=request.form.get('current_view_mode', 'list'),
-                             urgent=request.form.get('current_urgent_filter'),
-                             important=request.form.get('current_important_filter')))
+    db.session.commit()
+
+    # Recuperar los parámetros de la URL para redirigir a la vista actual
+    current_view_mode = request.form.get('current_view_mode', 'list')
+    current_urgent_filter = request.form.get('current_urgent_filter')
+    current_important_filter = request.form.get('current_important_filter')
+    current_status_filter = request.form.get('current_status_filter')
+
+    return redirect(url_for('index',
+                            view_mode=current_view_mode,
+                            urgent=current_urgent_filter if current_urgent_filter else None,
+                            important=current_important_filter if current_important_filter else None,
+                            status=current_status_filter if current_status_filter else None))
+
+
+@app.route('/delete_task/<int:task_id>')
+def delete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    db.session.delete(task)
+    db.session.commit()
+
+    # Recuperar los parámetros de la URL para redirigir a la vista actual
+    current_view_mode = request.args.get('view_mode', 'list')
+    current_urgent_filter = request.args.get('urgent')
+    current_important_filter = request.args.get('important')
+    current_status_filter = request.args.get('status')
+
+    return redirect(url_for('index',
+                            view_mode=current_view_mode,
+                            urgent=current_urgent_filter if current_urgent_filter else None,
+                            important=current_important_filter if current_important_filter else None,
+                            status=current_status_filter if current_status_filter else None))
+
+@app.route('/api/update_task_status/<int:task_id>', methods=['POST'])
+def api_update_task_status(task_id):
+    task = Task.query.get_or_404(task_id)
+    data = request.get_json()
+    new_status = data.get('new_status')
+
+    if new_status and new_status in TASK_STATUSES:
+        task.status = new_status
+        db.session.commit()
+        return jsonify({'status': task.status, 'message': 'Estado actualizado correctamente'})
+    return jsonify({'error': 'Estado inválido o no proporcionado'}), 400
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
