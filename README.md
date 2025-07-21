@@ -54,6 +54,55 @@ Este proyecto nace como una evolución mejorada del código de [Eisenplanner v1.
   * **Interfaz Responsiva:** Adaptada para funcionar y verse bien en dispositivos de diferentes tamaños, desde computadoras de escritorio hasta teléfonos móviles.
 
 -----
+## Capturas de Pantalla
+Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el soporte para el modo claro y oscuro.
+
+### Vista Kanban
+
+![alt text](screenshots/kanban_view_light.png)
+
+#### Modo Oscuro:
+![alt text](screenshots/kanban_view_dark.png)
+
+### Vista de Matriz (Eisenhower)
+
+#### Modo Claro:
+![alt text](screenshots/matrix_view_light.png)
+
+#### Modo Oscuro:
+![alt text](screenshots/matrix_view_dark.png)
+
+### Vista de Lista 
+
+#### Modo Claro:
+![alt text](screenshots/list_view_light.png)
+
+#### Modo Oscuro:
+![alt text](screenshots/list_view_dark.png)
+
+### Filtro de Progreso
+
+#### Modo Claro:
+![alt text](screenshots/list_view_tasks_light.png)
+
+#### Modo Oscuro:
+![alt text](screenshots/list_view_tasks_dark.png)
+
+### Filtro por Cuadrante
+
+#### Modo Claro:
+![alt text](screenshots/list_view_tasks_light_01.png)
+
+#### Modo Oscuro:
+![alt text](screenshots/list_view_tasks_dark_01.png)
+
+### Edición de Tarea
+
+#### Modo Claro:
+![alt text](screenshots/edit_view_light.png)
+
+
+-----
 
 ## ✅ Mejoras Implementadas sobre la base de Eisenplanner
 
