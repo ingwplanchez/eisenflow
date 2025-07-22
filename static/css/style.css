@@ -1,0 +1,379 @@
+/* General Styles */
+
+body {
+    transition: background-color 0.3s, color 0.3s;
+    background-color: #f8f9fa;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: background-color 0.3s, box-shadow 0.3s;
+    position: relative;
+}
+
+/* Dark Mode Toggle */
+.mode-toggle {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+}
+
+.mode-toggle .btn,
+.view-mode-toggle .btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    padding: 0;
+}
+
+.view-mode-toggle {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Form Styles */
+.form-control,
+.form-select {
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Completed Text */
+.completed-text {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+
+/* Para el modo oscuro */
+body.dark-mode .completed-text {
+    color: #adb5bd;
+}
+
+/* Quadrant Badges */
+.badge.bg-quadrant-1 {
+    background-color: #28a745 !important;
+}
+
+/* Do */
+.badge.bg-quadrant-2 {
+    background-color: #ffc107 !important;
+}
+
+/* Schedule */
+.badge.bg-quadrant-3 {
+    background-color: #0d6efd !important;
+}
+
+/* Delegate */
+.badge.bg-quadrant-4 {
+    background-color: #dc3545 !important;
+}
+
+/* Eliminate */
+
+/* Kanban Specific Styles */
+.kanban-board {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.kanban-column {
+    flex: 1;
+    min-width: 300px;
+    background-color: #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+.kanban-column-header {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #343a40;
+}
+
+.kanban-tasks {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.kanban-task-card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.3rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.075);
+    cursor: grab;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    position: relative;
+}
+
+.kanban-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.kanban-task-card.dragging {
+    opacity: 0.5;
+    border: 2px dashed #007bff;
+}
+
+.task-content {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.task-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.task-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* List View Styles */
+.list-group-item {
+    border-color: #e9ecef;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.list-group-item .dropdown-menu .dropdown-item.active {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+}
+
+.list-group-item .btn-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Pendiente */
+.list-group-item .btn-info {
+    background-color: #0dcaf0 !important;
+}
+
+/* En Progreso */
+.list-group-item .btn-success {
+    background-color: #28a745 !important;
+}
+
+/* Completado */
+
+/* Matrix View Styles */
+.quadrant-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.quadrant-cell {
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+    border-radius: 0.3rem;
+    background-color: #f8f9fa;
+}
+
+.quadrant-section {
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.quadrant-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #343a40;
+}
+
+/* Quadrant Border Colors (Light Mode) */
+.quadrant-1,
+.badge.bg-quadrant-1 {
+    border-color: #28a745;
+}
+
+.quadrant-2,
+.badge.bg-quadrant-2 {
+    border-color: #ffc107;
+}
+
+.quadrant-3,
+.badge.bg-quadrant-3 {
+    border-color: #0d6efd;
+}
+
+.quadrant-4,
+.badge.bg-quadrant-4 {
+    border-color: #dc3545;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode {
+    background-color: #212529;
+    color: #f8f9fa;
+}
+
+body.dark-mode .container {
+    background-color: #343a40;
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .kanban-column,
+body.dark-mode .quadrant-section,
+body.dark-mode .quadrant-cell {
+    background-color: #454d55;
+    box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.05);
+    border-color: #5a6268;
+}
+
+body.dark-mode .kanban-column-header,
+body.dark-mode .quadrant-title {
+    color: #f8f9fa;
+}
+
+body.dark-mode .kanban-task-card,
+body.dark-mode .list-group-item {
+    background-color: #5a6268;
+    border-color: #6c757d;
+    color: #f8f9fa;
+}
+
+body.dark-mode .completed-text {
+    color: #adb5bd;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #454d55;
+    color: #f8f9fa;
+    border-color: #5a6268;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #ced4da;
+}
+
+body.dark-mode .form-label {
+    color: #f8f9fa;
+}
+
+body.dark-mode .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f8f9fa' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* Dark Mode Filter Buttons */
+body.dark-mode .btn-outline-dark:not(.active) {
+    color: #f8f9fa;
+    border-color: #f8f9fa;
+    background-color: transparent;
+}
+
+body.dark-mode .btn-outline-dark:not(.active):hover {
+    background-color: rgba(248, 249, 250, 0.1);
+    color: #f8f9fa;
+    border-color: #f8f9fa;
+}
+
+body.dark-mode .btn-outline-dark.active {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+    border-color: #f8f9fa !important;
+}
+
+body.dark-mode .btn-outline-success {
+    color: #28a745;
+    border-color: #28a745;
+}
+
+body.dark-mode .btn-outline-success:hover,
+body.dark-mode .btn-outline-success.active {
+    background-color: #28a745;
+    color: #fff;
+    border-color: #28a745;
+}
+
+body.dark-mode .btn-outline-warning {
+    color: #ffc107;
+    border-color: #ffc107;
+}
+
+body.dark-mode .btn-outline-warning:hover,
+body.dark-mode .btn-outline-warning.active {
+    background-color: #ffc107;
+    color: #212529;
+    border-color: #ffc107;
+}
+
+body.dark-mode .btn-outline-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+body.dark-mode .btn-outline-primary:hover,
+body.dark-mode .btn-outline-primary.active {
+    background-color: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+body.dark-mode .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+body.dark-mode .btn-outline-danger:hover,
+body.dark-mode .btn-outline-danger.active {
+    background-color: #dc3545;
+    color: #fff;
+    border-color: #dc3545;
+}
+
+body.dark-mode .btn-outline-info {
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+body.dark-mode .btn-outline-info:hover,
+body.dark-mode .btn-outline-info.active {
+    background-color: #0dcaf0;
+    color: #fff;
+    border-color: #0dcaf0;
+}
+
+/* Dark Mode Quadrant Border Colors */
+body.dark-mode .quadrant-1 {
+    border-color: #28a745;
+}
+
+body.dark-mode .quadrant-2 {
+    border-color: #ffc107;
+}
+
+body.dark-mode .quadrant-3 {
+    border-color: #0d6efd;
+}
+
+body.dark-mode .quadrant-4 {
+    border-color: #dc3545;
+}
