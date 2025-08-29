@@ -66,7 +66,6 @@ Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el sopo
 
 ### Vista de Matriz (Eisenhower)
 
-#### Modo Claro:
 ![alt text](screenshots/matrix_view_light.png)
 
 #### Modo Oscuro:
@@ -74,7 +73,6 @@ Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el sopo
 
 ### Vista de Lista 
 
-#### Modo Claro:
 ![alt text](screenshots/list_view_light.png)
 
 #### Modo Oscuro:
@@ -82,7 +80,6 @@ Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el sopo
 
 ### Filtro de Progreso
 
-#### Modo Claro:
 ![alt text](screenshots/list_view_tasks_light.png)
 
 #### Modo Oscuro:
@@ -90,7 +87,6 @@ Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el sopo
 
 ### Filtro por Cuadrante
 
-#### Modo Claro:
 ![alt text](screenshots/list_view_tasks_light_01.png)
 
 #### Modo Oscuro:
@@ -98,7 +94,6 @@ Aquí puedes ver Eisenflow en acción, mostrando sus diferentes vistas y el sopo
 
 ### Edición de Tarea
 
-#### Modo Claro:
 ![alt text](screenshots/edit_view_light.png)
 
 
